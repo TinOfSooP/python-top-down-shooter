@@ -25,7 +25,7 @@ try:
     crosshair_image = pygame.transform.rotozoom(pygame.image.load("crosshair.png").convert_alpha(), 0, CROSSHAIR_SIZE)
     bullet_image = pygame.image.load("boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
-    enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_SIZE)
+    enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
 except pygame.error as e:
     print("Error loading images", e)
     pygame.quit()
@@ -100,7 +100,7 @@ class Player(pygame.sprite.Sprite):
             self.gun_offset = pygame.math.Vector2(GUN_OFFSET_X, GUN_OFFSET_Y)
             self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
             bullet_pos = self.pos + self.rotated_gun_offset
-            self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, self)
+            self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, source="player")
 
             # add bullet to all sprites and bullet group
             all_sprites_group.add(self.bullet)
@@ -159,19 +159,23 @@ class Bullet(pygame.sprite.Sprite):
 
     # check for collision with enemy
     def check_collision(self, sprite):
-        if self.source == "player" and isinstance(sprite, Enemy):
-            enemy.die()
+        if self.source == "player" and isinstance(sprite, Enemy) and not sprite.is_dead:
+            sprite.die()
 
     # update bullet
     def update(self):
         self.spawn()
         self.bullet_move()
 
-        self.collisions = pygame.sprite.spritecollide(self, all_sprites_group, False)
+        self.collisions = pygame.sprite.spritecollide(self, all_sprites_group, False, pygame.sprite.collide_rect)
         for self.collision_sprite in self.collisions:
             if self.collision_sprite != self:
-                self.check_collision(self.collision_sprite)
-                self.kill()
+                if isinstance(self.collision_sprite, (Player, Crosshair)):
+                    continue
+                if isinstance(self.collision_sprite, Enemy):
+                    if self.rect.colliderect(self.collision_sprite.hitbox):
+                        self.check_collision(self.collision_sprite)
+                        self.kill()
 
 # enemy class
 class Enemy(pygame.sprite.Sprite):
@@ -200,13 +204,13 @@ class Enemy(pygame.sprite.Sprite):
 
             # redefine the enemy rect
             self.rect.center = (int(self.pos.x), int(self.pos.y))
+            self.hitbox.center = self.rect.center
 
     # aim enemy
     def aim(self):
         self.enemy_theta = math.degrees(math.atan2(self.direction.y, self.direction.x))
         self.image = pygame.transform.rotate(self.default, -self.enemy_theta)
         self.rect = self.image.get_rect(center = self.hitbox.center)
-        self.hitbox = self.default.get_rect(center = self.pos)
 
     # enemy shooting logic
     def shoot(self):
@@ -220,14 +224,15 @@ class Enemy(pygame.sprite.Sprite):
         self.bullet_pos = self.pos + pygame.math.Vector2(ENEMY_GUN_OFFSET_X, ENEMY_GUN_OFFSET_Y).rotate(math.degrees(self.enemy_theta))
 
         # instantiate enemy bullet
-        self.bullet = Bullet(self.bullet_pos.x, self.bullet_pos.y, math.degrees(self.enemy_theta), bullet_image, self)
+        self.bullet = Bullet(self.bullet_pos.x, self.bullet_pos.y, math.degrees(self.enemy_theta), bullet_image, source="enemy")
         all_sprites_group.add(self.bullet)
         bullet_group.add(self.bullet)
 
     # die
     def die(self):
         self.is_dead = True
-        self.image = enemy_dead_image
+        self.image = pygame.transform.rotate(enemy_dead_image, -self.enemy_theta)
+        self.hitbox = pygame.Rect(0, 0, 0, 0)
 
     # update enemy
     def update(self):
