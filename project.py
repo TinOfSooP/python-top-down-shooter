@@ -17,7 +17,7 @@ clock = pygame.time.Clock()
 pygame.mouse.set_visible(False)
 
 # load background image
-bg = pygame.transform.scale(pygame.image.load("grassbg.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg = pygame.transform.scale(pygame.image.load("ground.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # load images outside of the class to avoid reloading unnecessarily
 try:
