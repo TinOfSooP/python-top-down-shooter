@@ -84,7 +84,7 @@ class Player(pygame.sprite.Sprite):
     # point player sprite in direction of mouse pointer
     def aim(self):
         self.mouse_pos = pygame.mouse.get_pos()
-        self.direction = pygame.math.Vector2(self.mouse_pos[0] - self.hitbox.centerx, self.mouse_pos[1] - self.hitbox.centery)
+        self.direction = pygame.math.Vector2(self.mouse_pos[0] - SCREEN_WIDTH // 2, self.mouse_pos[1] - SCREEN_HEIGHT // 2)
         self.theta = math.degrees(math.atan2(self.direction.y, self.direction.x))
         self.image = pygame.transform.rotate(self.default, -self.theta)
         self.rect = self.image.get_rect(center = self.hitbox.center)
@@ -245,7 +245,27 @@ class Enemy(pygame.sprite.Sprite):
             if self.enemy_shoot_cooldown > 0:
                 self.enemy_shoot_cooldown -= 1
 
+#camera class
+class Camera(pygame.sprite.Group):
+    def __init__(self):
+        super().__init__()
+        self.offset = pygame.math.Vector2()
+        self.floor_rect = bg.get_rect(topleft = (0, 0))
+
+    def move_camera(self):
+        self.offset.x = player.rect.centerx - SCREEN_WIDTH // 2
+        self.offset.y = player.rect.centery - SCREEN_HEIGHT // 2
+
+        # draw the floor
+        floor_offset_pos = self.floor_rect.topleft - self.offset
+        screen.blit(bg, floor_offset_pos)
+
+        for sprite in all_sprites_group:
+            offset_pos = sprite.rect.topleft - self.offset
+            screen.blit(sprite.image, offset_pos)
+
 # instantiate classes
+camera = Camera()
 player = Player()
 crosshair = Crosshair()
 enemy = Enemy()
@@ -254,12 +274,13 @@ enemy = Enemy()
 all_sprites_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
+crosshair_group = pygame.sprite.Group()
 
 # add sprites to groups
 all_sprites_group.add(enemy)
 enemy_group.add(enemy)
 all_sprites_group.add(player)
-all_sprites_group.add(crosshair)
+crosshair_group.add(crosshair)
 
 # main loop
 while True:
@@ -268,13 +289,15 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-    
-    # blit background to the screen
+
+    # draw background
     screen.blit(bg, (0, 0))
 
-    # draw sprite groups
-    all_sprites_group.draw(screen)
+    camera.move_camera()
     all_sprites_group.update()
+
+    screen.blit(crosshair.image, crosshair.rect)
+    crosshair_group.update()
 
     pygame.display.update()
     clock.tick_busy_loop(FPS)
