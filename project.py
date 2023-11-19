@@ -5,7 +5,6 @@ from sys import exit
 import math
 from random import randint
 from settings import *
-from weapons import *
 
 # initialise pygame
 pygame.init()
@@ -17,13 +16,13 @@ clock = pygame.time.Clock()
 pygame.mouse.set_visible(False)
 
 # load background image
-bg = pygame.transform.scale(pygame.image.load("grassbg.png").convert(), (SCREEN_WIDTH, SCREEN_HEIGHT))
+bg = pygame.image.load("background/ground.png").convert()
 
 # load images outside of the class to avoid reloading unnecessarily
 try:
-    player_image = pygame.transform.rotozoom(pygame.image.load("survivorrifle.png").convert_alpha(), 0, PLAYER_SIZE)
+    player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle.png").convert_alpha(), 0, PLAYER_SIZE)
     crosshair_image = pygame.transform.rotozoom(pygame.image.load("crosshair.png").convert_alpha(), 0, CROSSHAIR_SIZE)
-    bullet_image = pygame.image.load("boolettrail.png").convert_alpha()
+    bullet_image = pygame.image.load("bullets/boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
     enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
 except pygame.error as e:
@@ -137,13 +136,12 @@ class Bullet(pygame.sprite.Sprite):
         self.theta = theta
         self.speed = BULLET_SPEED
         self.lifetime = BULLET_LIFETIME
+        self.spawn_time = pygame.time.get_ticks()
         self.enemy_hit = None
         self.source = source
         
     # spawn bullet
     def spawn(self):
-        self.spawn_time = pygame.time.get_ticks()
-
         # introduce random factor 
         self.random_factor = randint(-BULLET_SPREAD, BULLET_SPREAD)
         self.velocity = pygame.Vector2(math.cos(math.radians(self.theta + self.random_factor)), math.sin(math.radians(self.theta + self.random_factor))) * self.speed
@@ -154,8 +152,8 @@ class Bullet(pygame.sprite.Sprite):
         self.pos += self.velocity
         self.rect.center = self.pos
        
-        if self.current_time - self.spawn_time > self.lifetime:
-            self.kill()
+        if pygame.time.get_ticks() - self.spawn_time > self.lifetime:
+            self.kill() 
 
     # check for collision with enemy
     def check_collision(self, sprite):
