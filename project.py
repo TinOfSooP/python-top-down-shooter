@@ -25,6 +25,7 @@ try:
     bullet_image = pygame.image.load("bullets/boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
     enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
+    wall_image = pygame.transform.rotozoom(pygame.image.load("wall.png").convert_alpha(), 0, TILE_SIZE)
 except pygame.error as e:
     print("Error loading images", e)
     pygame.quit()
@@ -76,9 +77,19 @@ class Player(pygame.sprite.Sprite):
     
     # move character
     def move(self):
+        # save current position
+        self.original_pos = self.pos.copy()
+
+        # move player
         self.pos += pygame.math.Vector2(self.velocity_x, self.velocity_y)
         self.hitbox.center = self.pos
         self.rect.center = self.hitbox.center
+
+        # check if player is moving into a wall
+        if tile_map.is_wall(self.rect.centerx, self.rect.centery):
+            self.pos = self.original_pos
+            self.hitbox.center = self.pos
+            self.rect.center = self.hitbox.center
 
     # point player sprite in direction of mouse pointer
     def aim(self):
@@ -96,9 +107,12 @@ class Player(pygame.sprite.Sprite):
     
     # instantiate a bullet
     def create_bullet(self):
-            self.gun_offset = pygame.math.Vector2(GUN_OFFSET_X, GUN_OFFSET_Y)
-            self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
-            bullet_pos = self.pos + self.rotated_gun_offset
+        self.gun_offset = pygame.math.Vector2(GUN_OFFSET_X, GUN_OFFSET_Y)
+        self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
+        bullet_pos = self.pos + self.rotated_gun_offset
+        bullet_rect = bullet_image.get_rect(center=(bullet_pos.x, bullet_pos.y))
+        
+        if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
             self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, source="player")
 
             # add bullet to all sprites and bullet group
@@ -140,9 +154,8 @@ class Bullet(pygame.sprite.Sprite):
         self.enemy_hit = None
         self.source = source
         
-    # spawn bullet
+    # spawn bullet with random factor
     def spawn(self):
-        # introduce random factor 
         self.random_factor = randint(-BULLET_SPREAD, BULLET_SPREAD)
         self.velocity = pygame.Vector2(math.cos(math.radians(self.theta + self.random_factor)), math.sin(math.radians(self.theta + self.random_factor))) * self.speed
 
@@ -155,25 +168,33 @@ class Bullet(pygame.sprite.Sprite):
         if pygame.time.get_ticks() - self.spawn_time > self.lifetime:
             self.kill() 
 
-    # check for collision with enemy
-    def check_collision(self, sprite):
+    # check for collision with wall
+    def check_wall_collision(self):
+       if tile_map.is_wall(self.rect.centerx, self.rect.centery):
+           self.kill()
+
+    # check for collision with enemies
+    def check_enemy_collision(self, sprite):
         if self.source == "player" and isinstance(sprite, Enemy) and not sprite.is_dead:
             sprite.die()
+            self.kill()
 
     # update bullet
     def update(self):
         self.spawn()
         self.bullet_move()
 
+        # check for collision with wall
+        self.check_wall_collision()
+
+        # check for collision with enemies
         self.collisions = pygame.sprite.spritecollide(self, all_sprites_group, False, pygame.sprite.collide_rect)
-        for self.collision_sprite in self.collisions:
-            if self.collision_sprite != self:
-                if isinstance(self.collision_sprite, (Player, Crosshair)):
+        for collision_sprite in self.collisions:
+            if collision_sprite != self:
+                if isinstance(collision_sprite, (Player, Crosshair)):
                     continue
-                if isinstance(self.collision_sprite, Enemy):
-                    if self.rect.colliderect(self.collision_sprite.hitbox):
-                        self.check_collision(self.collision_sprite)
-                        self.kill()
+                if isinstance(collision_sprite, Enemy):
+                    self.check_enemy_collision(collision_sprite)
 
 # enemy class
 class Enemy(pygame.sprite.Sprite):
@@ -192,6 +213,9 @@ class Enemy(pygame.sprite.Sprite):
 
     # move enemy
     def move(self):
+        # save current position
+        self.original_pos = self.pos.copy()
+
         self.direction = player.pos - self.pos
         self.distance = self.direction.length()
 
@@ -203,6 +227,12 @@ class Enemy(pygame.sprite.Sprite):
             # redefine the enemy rect
             self.rect.center = (int(self.pos.x), int(self.pos.y))
             self.hitbox.center = self.rect.center
+
+            # check for wall collision
+            if tile_map.is_wall(self.rect.centerx, self.rect.centery):
+                self.pos = self.original_pos
+                self.hitbox.center = self.pos
+                self.rect.center = self.hitbox.center
 
     # aim enemy
     def aim(self):
@@ -220,11 +250,13 @@ class Enemy(pygame.sprite.Sprite):
     def create_bullet(self):
         self.enemy_theta = math.atan2(self.direction.y, self.direction.x)
         self.bullet_pos = self.pos + pygame.math.Vector2(ENEMY_GUN_OFFSET_X, ENEMY_GUN_OFFSET_Y).rotate(math.degrees(self.enemy_theta))
-
-        # instantiate enemy bullet
-        self.bullet = Bullet(self.bullet_pos.x, self.bullet_pos.y, math.degrees(self.enemy_theta), bullet_image, source="enemy")
-        all_sprites_group.add(self.bullet)
-        bullet_group.add(self.bullet)
+        bullet_rect = bullet_image.get_rect(center=(self.bullet_pos.x, self.bullet_pos.y))
+        
+        if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
+            # instantiate enemy bullet
+            self.bullet = Bullet(self.bullet_pos.x, self.bullet_pos.y, math.degrees(self.enemy_theta), bullet_image, source="enemy")
+            all_sprites_group.add(self.bullet)
+            bullet_group.add(self.bullet)
 
     # die
     def die(self):
@@ -243,42 +275,108 @@ class Enemy(pygame.sprite.Sprite):
             if self.enemy_shoot_cooldown > 0:
                 self.enemy_shoot_cooldown -= 1
 
-#camera class
+# camera class
 class Camera(pygame.sprite.Group):
-    def __init__(self):
+    def __init__(self, tile_map):
         super().__init__()
         self.offset = pygame.math.Vector2()
-        self.floor_rect = bg.get_rect(topleft = (0, 0))
+        self.tile_map = tile_map
 
+    # move camera
     def move_camera(self):
-        self.offset.x = player.rect.centerx - SCREEN_WIDTH // 2
-        self.offset.y = player.rect.centery - SCREEN_HEIGHT // 2
+        target_x = player.rect.centerx - SCREEN_WIDTH / 2
+        target_y = player.rect.centery - SCREEN_HEIGHT / 2
 
-        # draw the floor
-        floor_offset_pos = self.floor_rect.topleft - self.offset
-        screen.blit(bg, floor_offset_pos)
+        self.offset.x = target_x
+        self.offset.y = target_y
 
-        for sprite in all_sprites_group:
-            offset_pos = sprite.rect.topleft - self.offset
-            screen.blit(sprite.image, offset_pos)
+    def draw(self, surface, position=(0, 0)):
+        self.tile_map.draw(surface, position=(-self.offset.x, -self.offset.y))
+
+# tile map class
+class TileMap(pygame.sprite.Sprite):
+    def __init__(self, map_filename):
+        super().__init__()
+        map_data = open(map_filename, "rt").readlines()
+        map_width = len(map_data[0]) - 1
+        map_length = len(map_data)
+
+        # create surface to hold map tiles
+        self.image = pygame.Surface((map_width * TILE_SIZE, map_length * TILE_SIZE))
+        self.rect = self.image.get_rect()
+
+        # iterate through map data
+        x_cursor = 0
+        y_cursor = 0
+        for map_line in map_data:
+            x_cursor = 0
+            for map_symbol in map_line:
+                tile_rect = pygame.Rect(x_cursor, y_cursor, TILE_SIZE, TILE_SIZE)
+                if map_symbol == '.':
+                    pygame.draw.rect(self.image, RED, tile_rect)
+                elif map_symbol == '1':
+                    pygame.draw.rect(self.image, GREEN, tile_rect)
+                else:
+                    pass
+                x_cursor += TILE_SIZE
+            y_cursor += TILE_SIZE
+
+        # set initial position of TileMap
+        self.rect.topleft = (0, 0)
+
+        self.tile_data = []
+        x_cursor = 0
+        y_cursor = 0
+
+        for map_line in map_data:
+            row = []
+            x_cursor = 0
+            for map_symbol in map_line:
+                if map_symbol == '.':
+                    row.append(False) 
+                elif map_symbol == '1':
+                    row.append(True)
+                else:
+                    row.append(False)
+                x_cursor += TILE_SIZE
+            self.tile_data.append(row)
+            y_cursor += TILE_SIZE
+
+    def is_wall(self, x, y):
+        tile_x = int(x // TILE_SIZE)
+        tile_y = int(y // TILE_SIZE)
+
+        # return 1 if wall, zero if not
+        if 0 <= tile_y < len(self.tile_data) and 0 <= tile_x < len(self.tile_data[0]):
+            return self.tile_data[tile_y][tile_x]
+        else:
+            return True
+
+    # draw the map
+    def draw(self, surface, position=(0,0)):
+        self.rect.topleft = position
+        surface.blit(self.image, self.rect)
 
 # instantiate classes
-camera = Camera()
+tile_map = TileMap("map1.txt")
+camera = Camera(tile_map)
 player = Player()
 crosshair = Crosshair()
 enemy = Enemy()
 
-# sprites groups and bullets group
+# sprite groups and bullets group
 all_sprites_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 crosshair_group = pygame.sprite.Group()
+tile_map_group = pygame.sprite.GroupSingle()
 
 # add sprites to groups
 all_sprites_group.add(enemy)
 enemy_group.add(enemy)
 all_sprites_group.add(player)
 crosshair_group.add(crosshair)
+tile_map_group.add(tile_map)
 
 # main loop
 while True:
@@ -288,12 +386,27 @@ while True:
             pygame.quit()
             exit()
 
-    # draw background
-    screen.blit(bg, (0, 0))
+    # clear screen
+    screen.fill(BLACK)
 
+    # Move camera and draw map
     camera.move_camera()
+    camera.draw(screen)
+
+    # draw sprites
     all_sprites_group.update()
 
+    # draw other sprites
+    for sprite in all_sprites_group:
+        if sprite != player:
+            offset_pos = sprite.rect.topleft - camera.offset
+            screen.blit(sprite.image, offset_pos)
+
+    # draw player at the center of the screen
+    offset_pos = player.rect.topleft - camera.offset
+    screen.blit(player.image, offset_pos)
+
+    # draw crosshair
     screen.blit(crosshair.image, crosshair.rect)
     crosshair_group.update()
 
