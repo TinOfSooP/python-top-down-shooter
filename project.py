@@ -15,9 +15,6 @@ pygame.display.set_caption("game project")
 clock = pygame.time.Clock()
 pygame.mouse.set_visible(False)
 
-# load background image
-bg = pygame.image.load("background/ground.png").convert()
-
 # load images outside of the class to avoid reloading unnecessarily
 try:
     player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle.png").convert_alpha(), 0, PLAYER_SIZE)
