@@ -53,7 +53,7 @@ class Player(pygame.sprite.Sprite):
 
         # check for key presses
         keys = pygame.key.get_pressed()
-        
+
         if keys[pygame.K_w]:
             self.velocity_y = -self.speed
         if keys[pygame.K_a]:
@@ -74,7 +74,7 @@ class Player(pygame.sprite.Sprite):
             self.is_shooting()
         else:
             self.shoot = False
-    
+
     # move character
     def move(self):
         # save current position
@@ -104,14 +104,14 @@ class Player(pygame.sprite.Sprite):
         if self.shoot_cooldown == 0 and self.shoot:
             self.shoot_cooldown = SHOOT_COOLDOWN
             self.create_bullet()
-    
+
     # instantiate a bullet
     def create_bullet(self):
         self.gun_offset = pygame.math.Vector2(GUN_OFFSET_X, GUN_OFFSET_Y)
         self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
         bullet_pos = self.pos + self.rotated_gun_offset
         bullet_rect = bullet_image.get_rect(center=(bullet_pos.x, bullet_pos.y))
-        
+
         if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
             self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, source="player")
 
@@ -153,7 +153,7 @@ class Bullet(pygame.sprite.Sprite):
         self.spawn_time = pygame.time.get_ticks()
         self.enemy_hit = None
         self.source = source
-        
+
     # spawn bullet with random factor
     def spawn(self):
         self.random_factor = randint(-BULLET_SPREAD, BULLET_SPREAD)
@@ -164,9 +164,9 @@ class Bullet(pygame.sprite.Sprite):
         self.current_time = pygame.time.get_ticks()
         self.pos += self.velocity
         self.rect.center = self.pos
-       
+
         if pygame.time.get_ticks() - self.spawn_time > self.lifetime:
-            self.kill() 
+            self.kill()
 
     # check for collision with wall
     def check_wall_collision(self):
@@ -251,7 +251,7 @@ class Enemy(pygame.sprite.Sprite):
         self.enemy_theta = math.atan2(self.direction.y, self.direction.x)
         self.bullet_pos = self.pos + pygame.math.Vector2(ENEMY_GUN_OFFSET_X, ENEMY_GUN_OFFSET_Y).rotate(math.degrees(self.enemy_theta))
         bullet_rect = bullet_image.get_rect(center=(self.bullet_pos.x, self.bullet_pos.y))
-        
+
         if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
             # instantiate enemy bullet
             self.bullet = Bullet(self.bullet_pos.x, self.bullet_pos.y, math.degrees(self.enemy_theta), bullet_image, source="enemy")
@@ -297,60 +297,42 @@ class Camera(pygame.sprite.Group):
 class TileMap(pygame.sprite.Sprite):
     def __init__(self, map_filename):
         super().__init__()
-        map_data = open(map_filename, "rt").readlines()
-        map_width = len(map_data[0]) - 1
+
+        # open and read data from map file
+        with open(map_filename, "r") as file:
+            map_data = [line.strip() for line in file.readlines()]
+
+        map_width = len(map_data[0])
         map_length = len(map_data)
 
-        # create surface to hold map tiles
+        # create surface to hold tiles
         self.image = pygame.Surface((map_width * TILE_SIZE, map_length * TILE_SIZE))
         self.rect = self.image.get_rect()
 
-        # iterate through map data
-        x_cursor = 0
-        y_cursor = 0
-        for map_line in map_data:
-            x_cursor = 0
-            for map_symbol in map_line:
-                tile_rect = pygame.Rect(x_cursor, y_cursor, TILE_SIZE, TILE_SIZE)
-                if map_symbol == '.':
-                    pygame.draw.rect(self.image, RED, tile_rect)
-                elif map_symbol == '1':
-                    pygame.draw.rect(self.image, GREEN, tile_rect)
-                else:
-                    pass
-                x_cursor += TILE_SIZE
-            y_cursor += TILE_SIZE
+        # create wall surface
+        wall_surface = pygame.Surface((TILE_SIZE, TILE_SIZE))
+        wall_surface.fill(GREEN)
 
-        # set initial position of TileMap
+        # iterate through map data to convert each character to a tile
+        for y, map_line in enumerate(map_data):
+            for x, map_symbol in enumerate(map_line):
+                tile_rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+                if map_symbol == '#':
+                    self.image.blit(wall_surface, tile_rect.topleft)
+
+        # initial position of tile map
         self.rect.topleft = (0, 0)
 
-        self.tile_data = []
-        x_cursor = 0
-        y_cursor = 0
+        # create tile data
+        self.tile_data = [[True if char == '#' else False for char in line] for line in map_data]
 
-        for map_line in map_data:
-            row = []
-            x_cursor = 0
-            for map_symbol in map_line:
-                if map_symbol == '.':
-                    row.append(False) 
-                elif map_symbol == '1':
-                    row.append(True)
-                else:
-                    row.append(False)
-                x_cursor += TILE_SIZE
-            self.tile_data.append(row)
-            y_cursor += TILE_SIZE
-
+    # check if tile type is a wall
     def is_wall(self, x, y):
         tile_x = int(x // TILE_SIZE)
         tile_y = int(y // TILE_SIZE)
 
-        # return 1 if wall, zero if not
-        if 0 <= tile_y < len(self.tile_data) and 0 <= tile_x < len(self.tile_data[0]):
-            return self.tile_data[tile_y][tile_x]
-        else:
-            return True
+        # return true if wall, false if not
+        return 0 <= tile_y < len(self.tile_data) and 0 <= tile_x < len(self.tile_data[0]) and self.tile_data[tile_y][tile_x]
 
     # draw the map
     def draw(self, surface, position=(0,0)):
@@ -389,7 +371,7 @@ while True:
     # clear screen
     screen.fill(BLACK)
 
-    # Move camera and draw map
+    # move camera and draw map
     camera.move_camera()
     camera.draw(screen)
 
