@@ -262,9 +262,9 @@ class Enemy(pygame.sprite.Sprite):
 
         # iterate over tiles in line of sight and check for walls
         for i in range(int(line_segment.length())):
-            current_point = pygame.math.Vector2(self.rect.center) + line_segment.normalize() * i
-            tile_x = int(current_point.x // TILE_SIZE)
-            tile_y = int(current_point.y // TILE_SIZE)
+            current_tile = pygame.math.Vector2(self.rect.center) + line_segment.normalize() * i
+            tile_x = int(current_tile.x // TILE_SIZE)
+            tile_y = int(current_tile.y // TILE_SIZE)
 
             # check if current tile is a wall
             if 0 <= tile_y < len(tile_map.tile_data) and 0 <= tile_x < len(tile_map.tile_data[0]) and tile_map.tile_data[tile_y][tile_x]:
