@@ -206,6 +206,8 @@ class Enemy(pygame.sprite.Sprite):
         self.hitbox = self.default.get_rect(center = self.pos)
         self.rect = self.hitbox.copy()
         self.speed = ENEMY_SPEED
+        self.enemy_theta = 0
+        self.reaction_time = ENEMY_REACTION_TIME
         self.enemy_shoot_cooldown = 0
         self.is_dead = False
 
@@ -285,8 +287,12 @@ class Enemy(pygame.sprite.Sprite):
             los_result = self.has_line_of_sight(player.rect)
 
             if los_result:
-                self.aim()
-                self.shoot()
+                self.reaction_time -= 1
+                if self.reaction_time <= 0:
+                    self.aim()
+                    self.shoot()
+            else:
+                self.reaction_time = ENEMY_REACTION_TIME
 
             # reduce cooldown
             if self.enemy_shoot_cooldown > 0:
