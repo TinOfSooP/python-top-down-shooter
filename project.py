@@ -196,10 +196,10 @@ class Bullet(pygame.sprite.Sprite):
 
 # enemy class
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, spawn_location):
         super().__init__()
         self.image = enemy_image.copy()
-        self.pos = pygame.math.Vector2(randint(0, SCREEN_WIDTH), randint(0, SCREEN_HEIGHT))
+        self.pos = pygame.math.Vector2(spawn_location)
 
         # create copy of original, non-transformed image
         self.default = self.image
@@ -217,20 +217,20 @@ class Enemy(pygame.sprite.Sprite):
         self.direction = player.pos - self.pos
         self.distance = self.direction.length()
 
-        # check for zero division error
-        if self.distance > 0:
-            self.direction.normalize_ip()
-            self.pos += self.direction * min(self.distance, self.speed)
+        # # check for zero division error
+        # if self.distance > 0:
+        #     self.direction.normalize_ip()
+        #     self.pos += self.direction * min(self.distance, self.speed)
 
-            # redefine the enemy rect
-            self.rect.center = (int(self.pos.x), int(self.pos.y))
-            self.hitbox.center = self.rect.center
+        #     # redefine the enemy rect
+        #     self.rect.center = (int(self.pos.x), int(self.pos.y))
+        #     self.hitbox.center = self.rect.center
 
-            # check for wall collision
-            if tile_map.is_wall(self.rect.centerx, self.rect.centery):
-                self.pos = self.original_pos
-                self.hitbox.center = self.pos
-                self.rect.center = self.hitbox.center
+        #     # check for wall collision
+        #     if tile_map.is_wall(self.rect.centerx, self.rect.centery):
+        #         self.pos = self.original_pos
+        #         self.hitbox.center = self.pos
+        #         self.rect.center = self.hitbox.center
 
     # aim enemy
     def aim(self):
@@ -256,6 +256,22 @@ class Enemy(pygame.sprite.Sprite):
             all_sprites_group.add(self.bullet)
             bullet_group.add(self.bullet)
 
+    def has_line_of_sight(self, player_rect):
+        # calculate line segment between player and enemy rects
+        line_segment = pygame.math.Vector2(player_rect.center) - pygame.math.Vector2(self.rect.center)
+
+        # iterate over tiles in line of sight and check for walls
+        for i in range(int(line_segment.length())):
+            current_point = pygame.math.Vector2(self.rect.center) + line_segment.normalize() * i
+            tile_x = int(current_point.x // TILE_SIZE)
+            tile_y = int(current_point.y // TILE_SIZE)
+
+            # check if current tile is a wall
+            if 0 <= tile_y < len(tile_map.tile_data) and 0 <= tile_x < len(tile_map.tile_data[0]) and tile_map.tile_data[tile_y][tile_x]:
+                return False
+
+        return True
+
     # die
     def die(self):
         self.is_dead = True
@@ -266,8 +282,11 @@ class Enemy(pygame.sprite.Sprite):
     def update(self):
         if not self.is_dead:
             self.move()
-            self.aim()
-            self.shoot()
+            los_result = self.has_line_of_sight(player.rect)
+
+            if los_result:
+                self.aim()
+                self.shoot()
 
             # reduce cooldown
             if self.enemy_shoot_cooldown > 0:
@@ -311,6 +330,7 @@ class TileMap(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         self.tile_data = []
+        self.enemy_spawn_locations = []
 
         # iterate through map data
         for y, map_line in enumerate(map_data):
@@ -322,6 +342,11 @@ class TileMap(pygame.sprite.Sprite):
                 if map_symbol == '#':
                     pygame.draw.rect(self.image, GREEN, tile_rect)
                     tile_row.append(True)
+
+                # spawn enemy on tile if symbol is E
+                elif map_symbol == 'E':
+                    tile_row.append(False)  
+                    self.enemy_spawn_locations.append((x * TILE_SIZE, y * TILE_SIZE))
                 else:
                     tile_row.append(False)
             self.tile_data.append(tile_row)
@@ -335,7 +360,11 @@ class TileMap(pygame.sprite.Sprite):
         tile_y = int(y // TILE_SIZE)
 
         # return true if wall, false if not
-        return 0 <= tile_y < len(self.tile_data) and 0 <= tile_x < len(self.tile_data[0]) and self.tile_data[tile_y][tile_x]
+        return 0 <= tile_y < len(self.tile_data) and 0 <= tile_x < len(self.tile_data[0]) and self.tile_data[tile_y][tile_x]#
+    
+    # return enemy spawn locations
+    def get_enemy_spawn_locations(self):
+        return self.enemy_spawn_locations
 
     # draw the map
     def draw(self, surface, position=(0,0)):
@@ -347,7 +376,11 @@ tile_map = TileMap("map1.txt")
 camera = Camera(tile_map)
 player = Player()
 crosshair = Crosshair()
-enemy = Enemy()
+
+# spawn enemies from the tilemap locations
+enemy_spawn_locations = tile_map.get_enemy_spawn_locations()
+enemy = [Enemy(spawn_location) for spawn_location in enemy_spawn_locations]
+
 
 # sprite groups and bullets group
 all_sprites_group = pygame.sprite.Group()
