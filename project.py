@@ -331,6 +331,7 @@ class TileMap(pygame.sprite.Sprite):
 
         self.tile_data = []
         self.enemy_spawn_locations = []
+        self.player_spawn_location = []
 
         # iterate through map data
         for y, map_line in enumerate(map_data):
@@ -339,14 +340,19 @@ class TileMap(pygame.sprite.Sprite):
                 tile_rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
 
                 # draw green tile if symbol is #
-                if map_symbol == '#':
+                if map_symbol == "#":
                     pygame.draw.rect(self.image, GREEN, tile_rect)
                     tile_row.append(True)
 
                 # spawn enemy on tile if symbol is E
-                elif map_symbol == 'E':
+                elif map_symbol == "E":
                     tile_row.append(False)  
                     self.enemy_spawn_locations.append((x * TILE_SIZE, y * TILE_SIZE))
+
+                # spawn player on tile if symbol is P
+                elif map_symbol == "P":
+                    tile_row.append(False)
+                    self.player_spawn_location.append((x * TILE_SIZE, y * TILE_SIZE))
                 else:
                     tile_row.append(False)
             self.tile_data.append(tile_row)
@@ -374,7 +380,12 @@ class TileMap(pygame.sprite.Sprite):
 # instantiate classes
 tile_map = TileMap("map1.txt")
 camera = Camera(tile_map)
+
+# spawn player at tilemap location
 player = Player()
+if tile_map.player_spawn_location:
+    player.pos = pygame.math.Vector2(tile_map.player_spawn_location[0])
+
 crosshair = Crosshair()
 
 # spawn enemies from the tilemap locations
