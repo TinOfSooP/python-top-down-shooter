@@ -288,7 +288,7 @@ class Camera(pygame.sprite.Group):
         self.offset.x = target_x
         self.offset.y = target_y
 
-    def draw(self, surface, position=(0, 0)):
+    def draw(self, surface):
         self.tile_map.draw(surface, position=(-self.offset.x, -self.offset.y))
 
 # tile map class
