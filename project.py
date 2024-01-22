@@ -23,6 +23,7 @@ try:
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
     enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
     wall_image = pygame.transform.rotozoom(pygame.image.load("wall.png").convert_alpha(), 0, TILE_SIZE)
+    floor_image = pygame.transform.rotozoom(pygame.image.load("floor.png").convert_alpha(), 0, TILE_SIZE)
 except pygame.error as e:
     print("Error loading images", e)
     pygame.quit()
@@ -296,9 +297,12 @@ class TileMap(pygame.sprite.Sprite):
         super().__init__()
 
         # open and read data from map file
-        with open(map_filename, "r") as file:
-            map_data = [line.strip() for line in file.readlines()]
+        with open(map_filename, "r") as f:
+            map_data = []
+            for line in f.readlines():
+                map_data.append(line.strip())
 
+        # calculate map width and length
         map_width = len(map_data[0])
         map_length = len(map_data)
 
@@ -306,24 +310,26 @@ class TileMap(pygame.sprite.Sprite):
         self.image = pygame.Surface((map_width * TILE_SIZE, map_length * TILE_SIZE))
         self.rect = self.image.get_rect()
 
-        # create wall surface
-        wall_surface = pygame.Surface((TILE_SIZE, TILE_SIZE))
-        wall_surface.fill(GREEN)
+        self.tile_data = []
 
-        # iterate through map data to convert each character to a tile
+        # iterate through map data
         for y, map_line in enumerate(map_data):
+            tile_row = []
             for x, map_symbol in enumerate(map_line):
                 tile_rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-                if map_symbol == '#':
-                    self.image.blit(wall_surface, tile_rect.topleft)
 
+                # draw green tile if symbol is #
+                if map_symbol == '#':
+                    pygame.draw.rect(self.image, GREEN, tile_rect)
+                    tile_row.append(True)
+                else:
+                    tile_row.append(False)
+            self.tile_data.append(tile_row)
+            
         # initial position of tile map
         self.rect.topleft = (0, 0)
-
-        # create tile data
-        self.tile_data = [[True if char == '#' else False for char in line] for line in map_data]
-
-    # check if tile type is a wall
+                
+    # check if tile is within range and if type is a wall
     def is_wall(self, x, y):
         tile_x = int(x // TILE_SIZE)
         tile_y = int(y // TILE_SIZE)
