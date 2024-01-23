@@ -260,11 +260,11 @@ class Enemy(pygame.sprite.Sprite):
 
     def has_line_of_sight(self, player_rect):
         # calculate line segment between player and enemy rects
-        line_segment = pygame.math.Vector2(player_rect.center) - pygame.math.Vector2(self.rect.center)
+        ray_cast = pygame.math.Vector2(player_rect.center) - pygame.math.Vector2(self.rect.center)
 
         # iterate over tiles in line of sight and check for walls
-        for i in range(int(line_segment.length())):
-            current_tile = pygame.math.Vector2(self.rect.center) + line_segment.normalize() * i
+        for i in range(int(ray_cast.length())):
+            current_tile = pygame.math.Vector2(self.rect.center) + ray_cast.normalize() * i
             tile_x = int(current_tile.x // TILE_SIZE)
             tile_y = int(current_tile.y // TILE_SIZE)
 
