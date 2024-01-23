@@ -22,6 +22,7 @@ try:
     bullet_image = pygame.image.load("bullets/boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
     enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
+    drop_gun_image = pygame.transform.rotozoom(pygame.image.load("enemy_gun.png").convert_alpha(), 0, DROP_WEAPON_SIZE)
     wall_image = pygame.transform.rotozoom(pygame.image.load("wall.png").convert_alpha(), 0, TILE_SIZE)
     floor_image = pygame.transform.rotozoom(pygame.image.load("floor.png").convert_alpha(), 0, TILE_SIZE)
 except pygame.error as e:
@@ -43,6 +44,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = PLAYER_SPEED
         self.shoot = False
         self.shoot_cooldown = 0
+        self.ammo = AMMO_COUNT
 
     # detect user input
     def user_input(self):
@@ -99,9 +101,10 @@ class Player(pygame.sprite.Sprite):
 
     # refresh shooting cooldown
     def is_shooting(self):
-        if self.shoot_cooldown == 0 and self.shoot:
+        if self.shoot_cooldown == 0 and self.shoot and self.ammo > 0:
             self.shoot_cooldown = SHOOT_COOLDOWN
             self.create_bullet()
+            self.ammo -= 1
 
     # instantiate a bullet
     def create_bullet(self):
@@ -117,11 +120,18 @@ class Player(pygame.sprite.Sprite):
             all_sprites_group.add(self.bullet)
             bullet_group.add(self.bullet)
 
+    # check for collision between player and gun drop
+    def ammo_pickup(self):
+        collisions = pygame.sprite.spritecollide(self, drops_group, True)
+        for weapon in collisions:
+            self.ammo += 30
+
     # update player
     def update(self):
         self.user_input()
         self.move()
         self.aim()
+        self.ammo_pickup()
 
         # reduce time before next shot each tick
         if self.shoot_cooldown > 0:
@@ -193,6 +203,16 @@ class Bullet(pygame.sprite.Sprite):
                     continue
                 if isinstance(collision_sprite, Enemy):
                     self.check_enemy_collision(collision_sprite)
+
+# dropped weapon class
+class DroppedWeapon(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = drop_gun_image.copy()
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def update(self):
+        pass
 
 # enemy class
 class Enemy(pygame.sprite.Sprite):
@@ -279,6 +299,12 @@ class Enemy(pygame.sprite.Sprite):
         self.is_dead = True
         self.image = pygame.transform.rotate(enemy_dead_image, -self.enemy_theta)
         self.hitbox = pygame.Rect(0, 0, 0, 0)
+
+        # probability for enemy to drop a gun
+        if randint(1, 100) <= DROP_CHANCE:
+            dropped_weapon = DroppedWeapon(self.pos.x, self.pos.y)
+            all_sprites_group.add(dropped_weapon)
+            drops_group.add(dropped_weapon)
 
     # update enemy
     def update(self):
@@ -405,6 +431,7 @@ enemy_group = pygame.sprite.Group()
 bullet_group = pygame.sprite.Group()
 crosshair_group = pygame.sprite.Group()
 tile_map_group = pygame.sprite.GroupSingle()
+drops_group = pygame.sprite.Group()
 
 # add sprites to groups
 all_sprites_group.add(enemy)
