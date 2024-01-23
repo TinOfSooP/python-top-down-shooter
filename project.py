@@ -124,7 +124,7 @@ class Player(pygame.sprite.Sprite):
     def ammo_pickup(self):
         collisions = pygame.sprite.spritecollide(self, drops_group, True)
         for weapon in collisions:
-            self.ammo += 30
+            self.ammo += 24
 
     # update player
     def update(self):
@@ -159,7 +159,6 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = BULLET_SPEED
         self.lifetime = BULLET_LIFETIME
         self.spawn_time = pygame.time.get_ticks()
-        self.enemy_hit = None
         self.source = source
 
     # spawn bullet with random factor
@@ -256,8 +255,8 @@ class Enemy(pygame.sprite.Sprite):
 
     # aim enemy
     def aim(self):
-        self.enemy_theta = math.degrees(math.atan2(self.direction.y, self.direction.x))
-        self.image = pygame.transform.rotate(self.default, -self.enemy_theta)
+        self.enemy_theta = self.direction.angle_to(pygame.math.Vector2(1, 0))
+        self.image = pygame.transform.rotate(self.default, self.enemy_theta)
         self.rect = self.image.get_rect(center = self.hitbox.center)
 
     # enemy shooting logic
@@ -388,9 +387,6 @@ class TileMap(pygame.sprite.Sprite):
                 else:
                     tile_row.append(False)
             self.tile_data.append(tile_row)
-            
-        # initial position of tile map
-        self.rect.topleft = (0, 0)
                 
     # check if tile is within range and if type is a wall
     def is_wall(self, x, y):
