@@ -183,8 +183,9 @@ class Bullet(pygame.sprite.Sprite):
     # check for collision with enemies
     def check_enemy_collision(self, sprite):
         if self.source == "player" and isinstance(sprite, Enemy) and not sprite.is_dead:
-            sprite.die()
-            self.kill()
+            if self.rect.colliderect(sprite.hitbox):
+                sprite.die()
+                self.kill()
 
     # update bullet
     def update(self):
