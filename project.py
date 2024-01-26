@@ -124,7 +124,7 @@ class Player(pygame.sprite.Sprite):
     def ammo_pickup(self):
         collisions = pygame.sprite.spritecollide(self, drops_group, True)
         for weapon in collisions:
-            self.ammo = 24
+            self.ammo = AMMO_COUNT
 
     # update player
     def update(self):
