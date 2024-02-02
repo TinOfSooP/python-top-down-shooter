@@ -13,11 +13,10 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("game project")
 clock = pygame.time.Clock()
-pygame.mouse.set_visible(False)
 
 # load images outside of the class to avoid reloading unnecessarily
 try:
-    player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle2.png").convert_alpha(), 0, PLAYER_SIZE)
+    player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle.png").convert_alpha(), 0, PLAYER_SIZE)
     crosshair_image = pygame.transform.rotozoom(pygame.image.load("crosshair.png").convert_alpha(), 0, CROSSHAIR_SIZE)
     bullet_image = pygame.image.load("bullets/boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
@@ -30,6 +29,65 @@ except pygame.error as e:
     pygame.quit()
     exit()
 
+# main menu screen
+def main_menu(player_alive=True):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if start_button_rect.collidepoint(event.pos):
+                    return True  # Start game
+                elif quit_button_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    exit()
+
+        screen.fill((0, 0, 0))
+
+        # Calculate button positions
+        button_width = 200
+        button_height = 100
+        button_spacing = 20
+
+        start_button_rect = pygame.Rect((SCREEN_WIDTH - button_width) // 2, (SCREEN_HEIGHT - button_height) // 2, button_width, button_height)
+        quit_button_rect = start_button_rect.copy()
+        quit_button_rect.y += button_height + button_spacing
+
+        # Draw start button
+        pygame.draw.rect(screen, (255, 0, 0), start_button_rect)
+        font = pygame.font.Font(None, 36)
+        start_text = font.render('Start Game', True, (255, 255, 255))
+        start_text_rect = start_text.get_rect(center=start_button_rect.center)
+        screen.blit(start_text, start_text_rect)
+
+        # Draw quit button
+        pygame.draw.rect(screen, (255, 0, 0), quit_button_rect)
+        quit_text = font.render('Quit', True, (255, 255, 255))
+        quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
+        screen.blit(quit_text, quit_text_rect)
+
+        if not player_alive:
+            # Player is killed, display a message and option to return to main menu
+            font = pygame.font.Font(None, 36)
+            game_over_text = font.render('Game Over', True, (255, 0, 0))
+            game_over_text_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+            screen.blit(game_over_text, game_over_text_rect)
+
+            return_button_rect = pygame.Rect((SCREEN_WIDTH - button_width) // 2, (SCREEN_HEIGHT - button_height) // 2 + button_height + button_spacing, button_width, button_height)
+            pygame.draw.rect(screen, (0, 255, 0), return_button_rect)
+            return_text = font.render('Return to Menu', True, (255, 255, 255))
+            return_text_rect = return_text.get_rect(center=return_button_rect.center)
+            screen.blit(return_text, return_text_rect)
+
+            if return_button_rect.collidepoint(pygame.mouse.get_pos()):
+                pygame.draw.rect(screen, (255, 255, 255), return_button_rect, 3)  # Highlight return button on hover
+                if pygame.mouse.get_pressed()[0]:
+                    return False  # Return to main menu
+
+        pygame.display.flip()
+        clock.tick(30)
+
 # player class
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -39,17 +97,14 @@ class Player(pygame.sprite.Sprite):
 
         # create copy of original, non-transformed image
         self.default = self.image
-        self.hitbox_size = pygame.Vector2(80, 80)  # Adjust the hitbox size as needed
-        self.hitbox_offset = pygame.Vector2(-self.hitbox_size.x // 2, -self.hitbox_size.y // 2)
-
-        # Calculate hitbox rect
-        self.hitbox = pygame.Rect(self.pos.x + self.hitbox_offset.x, self.pos.y + self.hitbox_offset.y, self.hitbox_size.x, self.hitbox_size.y)
+        self.hitbox = self.default.get_rect(center = self.pos)
         self.rect = self.hitbox.copy()
         self.speed = PLAYER_SPEED
         self.shoot = False
         self.shoot_cooldown = 0
         self.ammo = AMMO_COUNT
         self.theta = 0
+        self.is_dead = False
 
     # detect user input
     def user_input(self):
@@ -131,9 +186,8 @@ class Player(pygame.sprite.Sprite):
         for weapon in collisions:
             self.ammo = AMMO_COUNT
 
-    def draw_hitbox(self, surface, camera_offset):
-        adjusted_hitbox = self.hitbox.move(-camera_offset[0], -camera_offset[1])
-        pygame.draw.rect(surface, RED, adjusted_hitbox, 2)
+    def die(self):
+        self.is_dead = True
 
     # update player
     def update(self):
@@ -200,8 +254,7 @@ class Bullet(pygame.sprite.Sprite):
     def check_player_collision(self, player):
         if self.source == "enemy" and isinstance(player, Player):
             if self.rect.colliderect(player.hitbox):
-                player.kill()
-                self.kill()
+                player.die()
 
     # update bullet
     def update(self):
@@ -422,19 +475,6 @@ class TileMap(pygame.sprite.Sprite):
         self.rect.topleft = position
         surface.blit(self.image, self.rect)
 
-def new_game():
-    global player, enemy
-    for i in all_sprites_group:
-        i.kill()
-    player = Player()
-    all_sprites_group.add(player)
-    if tile_map.player_spawn_location:
-        player.pos = pygame.math.Vector2(tile_map.player_spawn_location[0])
-
-    enemy_spawn_locations = tile_map.get_enemy_spawn_locations()
-    enemy = [Enemy(spawn_location) for spawn_location in enemy_spawn_locations]
-    all_sprites_group.add(enemy)
-
 # instantiate classes
 tile_map = TileMap("map1.txt")
 camera = Camera(tile_map)
@@ -465,21 +505,30 @@ all_sprites_group.add(player)
 crosshair_group.add(crosshair)
 tile_map_group.add(tile_map)
 
-# main loop
-game_paused = False
-while True:
-    keys = pygame.key.get_pressed()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
+def new_game():
+    global player, enemy
+    for i in all_sprites_group:
+        i.kill()
+    player = Player()
+    all_sprites_group.add(player)
+    if tile_map.player_spawn_location:
+        player.pos = pygame.math.Vector2(tile_map.player_spawn_location[0])
 
-    # for when the player is dead
-    if not player.alive():
-        game_paused = True
+    enemy_spawn_locations = tile_map.get_enemy_spawn_locations()
+    enemy = [Enemy(spawn_location) for spawn_location in enemy_spawn_locations]
+    all_sprites_group.add(enemy)
 
-    # for when the player is alive
-    if not game_paused:
+def game_loop():
+    # Main game loop
+    while True:
+        keys = pygame.key.get_pressed()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+        if player.is_dead:  # Check if the player is dead
+            return False  # Play
 
         # clear screen
         screen.fill(BLACK)
@@ -507,33 +556,6 @@ while True:
 
         pygame.display.update()
         clock.tick_busy_loop(FPS)
-
-    else:
-        # game pause message
-        font = pygame.font.SysFont(None, 40)
-
-        # Render the text with black color
-        text_surface = font.render("Press R to restart", True, (0, 0, 0))
-
-        # Create a list of offsets for the outline
-        offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-
-        # Blit the text multiple times with slight offsets to create the outline effect
-        for offset in offsets:
-            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], SCREEN_HEIGHT // 2 + offset[1]))
-            screen.blit(text_surface, text_rect)
-
-        # Render the text again in white color (for the main text)
-        text_surface = font.render("Press R to restart", True, (255, 255, 255))
-        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        screen.blit(text_surface, text_rect)
-        pygame.display.update()
-
-        # Check for key presses
-        if keys[pygame.K_r]:
-            # Restart the game
-            new_game()
-            game_paused = False
 
 def main():
     while True:
