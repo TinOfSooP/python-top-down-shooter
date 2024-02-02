@@ -534,13 +534,3 @@ while True:
             # Restart the game
             new_game()
             game_paused = False
-
-def main():
-    while True:
-        new_game()
-        
-        if not new_game():
-            continue  # Player died, restart the game
-
-if __name__ == "__main__":
-    main()
