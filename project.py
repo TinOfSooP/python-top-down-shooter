@@ -131,6 +131,7 @@ class Player(pygame.sprite.Sprite):
         for weapon in collisions:
             self.ammo = AMMO_COUNT
 
+    # draw player hitbox for debugging
     def draw_hitbox(self, surface, camera_offset):
         adjusted_hitbox = self.hitbox.move(-camera_offset[0], -camera_offset[1])
         pygame.draw.rect(surface, RED, adjusted_hitbox, 2)
@@ -422,10 +423,15 @@ class TileMap(pygame.sprite.Sprite):
         self.rect.topleft = position
         surface.blit(self.image, self.rect)
 
+# restart game after death
 def new_game():
     global player, enemy
+
+    # kill all relevant sprites
     for i in all_sprites_group:
         i.kill()
+
+    # respawn all relevant sprites at initial positions
     player = Player()
     all_sprites_group.add(player)
     if tile_map.player_spawn_location:
@@ -512,18 +518,18 @@ while True:
         # game pause message
         font = pygame.font.SysFont(None, 40)
 
-        # Render the text with black color
+        # render text in black for outline
         text_surface = font.render("Press R to restart", True, (0, 0, 0))
 
-        # Create a list of offsets for the outline
+        # create a list of offsets for the outline
         offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
 
-        # Blit the text multiple times with slight offsets to create the outline effect
+        # blit with slight offsets to create the outline
         for offset in offsets:
             text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], SCREEN_HEIGHT // 2 + offset[1]))
             screen.blit(text_surface, text_rect)
 
-        # Render the text again in white color (for the main text)
+        # blit main white text
         text_surface = font.render("Press R to restart", True, (255, 255, 255))
         text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         screen.blit(text_surface, text_rect)
