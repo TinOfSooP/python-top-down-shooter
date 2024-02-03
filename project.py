@@ -13,7 +13,6 @@ pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("game project")
 clock = pygame.time.Clock()
-pygame.mouse.set_visible(False)
 
 # load images outside of the class to avoid reloading unnecessarily
 try:
@@ -425,11 +424,17 @@ class TileMap(pygame.sprite.Sprite):
 
 # restart game after death
 def new_game():
-    global player, enemy
+    global player, enemy, game_paused
+    game_paused = False
 
     # kill all relevant sprites
     for i in all_sprites_group:
         i.kill()
+
+    # empty all relevant sprite groups
+    all_sprites_group.empty()
+    enemy_group.empty()
+    bullet_group.empty()
 
     # respawn all relevant sprites at initial positions
     player = Player()
@@ -450,6 +455,7 @@ player = Player()
 if tile_map.player_spawn_location:
     player.pos = pygame.math.Vector2(tile_map.player_spawn_location[0])
 
+# create crosshair
 crosshair = Crosshair()
 
 # spawn enemies from the tilemap locations
@@ -471,6 +477,47 @@ all_sprites_group.add(player)
 crosshair_group.add(crosshair)
 tile_map_group.add(tile_map)
 
+# main menu screen
+def main_menu():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if start_button_rect.collidepoint(event.pos):
+                    new_game()
+                    return True
+                elif quit_button_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    exit()
+
+        screen.fill(BLACK)
+
+        # create start and quit buttons
+        start_button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT - BUTTON_HEIGHT) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
+        quit_button_rect = start_button_rect.copy()
+        quit_button_rect.y += BUTTON_HEIGHT + BUTTON_SPACING
+
+        # draw start button
+        pygame.draw.rect(screen, (GREEN), start_button_rect)
+        font = pygame.font.Font(None, 36)
+        start_text = font.render('Start Game', True, (WHITE))
+        start_text_rect = start_text.get_rect(center=start_button_rect.center)
+        screen.blit(start_text, start_text_rect)
+
+        # draw quit button
+        pygame.draw.rect(screen, (GREEN), quit_button_rect)
+        quit_text = font.render('Quit', True, (WHITE))
+        quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
+        screen.blit(quit_text, quit_text_rect)
+
+        pygame.display.update()
+
+if not main_menu():
+    pygame.quit()
+    exit()
+
 # main loop
 game_paused = False
 while True:
@@ -483,9 +530,11 @@ while True:
     # for when the player is dead
     if not player.alive():
         game_paused = True
+        pygame.mouse.set_visible(True)
 
     # for when the player is alive
-    if not game_paused:
+    if player.alive():
+        pygame.mouse.set_visible(False)
 
         # clear screen
         screen.fill(BLACK)
@@ -519,7 +568,7 @@ while True:
         font = pygame.font.SysFont(None, 40)
 
         # render text in black for outline
-        text_surface = font.render("Press R to restart", True, (0, 0, 0))
+        text_surface = font.render("Press R to restart", True, (BLACK))
 
         # create a list of offsets for the outline
         offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
@@ -530,13 +579,18 @@ while True:
             screen.blit(text_surface, text_rect)
 
         # blit main white text
-        text_surface = font.render("Press R to restart", True, (255, 255, 255))
+        text_surface = font.render("Press R to restart", True, (WHITE))
         text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         screen.blit(text_surface, text_rect)
         pygame.display.update()
 
-        # Check for key presses
+        # check for key presses
         if keys[pygame.K_r]:
-            # Restart the game
+            # restart game
             new_game()
             game_paused = False
+        elif keys[pygame.K_ESCAPE]:
+            # return to main menu
+            if not main_menu():
+                pygame.quit()
+                exit()
