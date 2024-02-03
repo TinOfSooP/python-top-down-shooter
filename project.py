@@ -116,7 +116,7 @@ class Player(pygame.sprite.Sprite):
         self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
         bullet_pos = self.pos + self.rotated_gun_offset
         bullet_rect = bullet_image.get_rect(center=(bullet_pos.x, bullet_pos.y))
-
+        
         if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
             self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, source="player")
 
@@ -310,7 +310,7 @@ class Enemy(pygame.sprite.Sprite):
 
         return True
 
-    # die
+    # swap to dead sprite and remove collider
     def die(self):
         self.is_dead = True
         self.image = pygame.transform.rotate(enemy_dead_image, -self.enemy_theta)
@@ -328,11 +328,14 @@ class Enemy(pygame.sprite.Sprite):
             self.move()
             los_result = self.has_line_of_sight(player.rect)
 
+            # if enemy has line of sight to the player
             if los_result:
                 self.reaction_time -= 1
                 if self.reaction_time <= 0:
                     self.aim()
                     self.shoot()
+            
+            # otherwise refresh reaction time
             else:
                 self.reaction_time = ENEMY_REACTION_TIME
 
