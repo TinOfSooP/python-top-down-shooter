@@ -38,7 +38,7 @@ class Player(pygame.sprite.Sprite):
 
         # create copy of original, non-transformed image
         self.default = self.image
-        self.hitbox_size = pygame.Vector2(80, 80)  # Adjust the hitbox size as needed
+        self.hitbox_size = pygame.Vector2(80, 80)
         self.hitbox_offset = pygame.Vector2(-self.hitbox_size.x // 2, -self.hitbox_size.y // 2)
 
         # Calculate hitbox rect
@@ -116,7 +116,7 @@ class Player(pygame.sprite.Sprite):
         self.rotated_gun_offset = self.gun_offset.rotate(self.theta)
         bullet_pos = self.pos + self.rotated_gun_offset
         bullet_rect = bullet_image.get_rect(center=(bullet_pos.x, bullet_pos.y))
-        
+
         if not tile_map.is_wall(bullet_rect.centerx, bullet_rect.centery):
             self.bullet = Bullet(bullet_pos.x, bullet_pos.y, self.theta, bullet_image, source="player")
 
@@ -322,9 +322,15 @@ class Enemy(pygame.sprite.Sprite):
             all_sprites_group.add(dropped_weapon)
             drops_group.add(dropped_weapon)
 
+    # draw hitbox for debugging
+    def draw_hitbox(self, surface, camera_offset):
+        adjusted_hitbox = self.hitbox.move(-camera_offset[0], -camera_offset[1])
+        pygame.draw.rect(surface, RED, adjusted_hitbox, 2)
+
     # update enemy
     def update(self):
         if not self.is_dead:
+            # self.draw_hitbox(screen, camera.offset)
             self.move()
             los_result = self.has_line_of_sight(player.rect)
 
@@ -498,6 +504,7 @@ def main_menu():
         screen.fill(BLACK)
 
         # create start and quit buttons
+        pygame.mouse.set_visible(True)
         start_button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT - BUTTON_HEIGHT) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
         quit_button_rect = start_button_rect.copy()
         quit_button_rect.y += BUTTON_HEIGHT + BUTTON_SPACING
@@ -521,7 +528,7 @@ if not main_menu():
     pygame.quit()
     exit()
 
-# main loop
+# main game loop
 game_paused = False
 while True:
     keys = pygame.key.get_pressed()
@@ -533,7 +540,6 @@ while True:
     # for when the player is dead
     if not player.alive():
         game_paused = True
-        pygame.mouse.set_visible(True)
 
     # for when the player is alive
     if player.alive():
@@ -558,6 +564,9 @@ while True:
         # draw player at the center of the screen
         offset_pos = player.rect.topleft - camera.offset
         screen.blit(player.image, offset_pos)
+
+        # draw hitboxes for testing and debugging
+        # player.draw_hitbox(screen, camera.offset)
 
         # draw crosshair
         screen.blit(crosshair.image, crosshair.rect)
