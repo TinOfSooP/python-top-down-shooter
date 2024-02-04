@@ -582,10 +582,10 @@ while True:
         # render text in black for outline
         text_surface = font.render("Press R to restart", True, (BLACK))
 
-        # create a list of offsets for the outline
+        # create list of offsets for outline
         offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
 
-        # blit with slight offsets to create the outline
+        # blit with slight offsets
         for offset in offsets:
             text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], SCREEN_HEIGHT // 2 + offset[1]))
             screen.blit(text_surface, text_rect)
