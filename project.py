@@ -95,11 +95,6 @@ class Player(pygame.sprite.Sprite):
             self.hitbox.center = self.pos
             self.rect.center = self.hitbox.center
 
-        # check if player has reached exit and all enemies are killed
-        if tile_map.exit_tile_location and self.rect.collidepoint(tile_map.exit_tile_location):
-            if len(enemy_group) == 0:
-                main_menu()
-
     # point player sprite in direction of mouse pointer
     def aim(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -320,6 +315,7 @@ class Enemy(pygame.sprite.Sprite):
         self.is_dead = True
         self.image = pygame.transform.rotate(enemy_dead_image, -self.enemy_theta)
         self.hitbox = pygame.Rect(0, 0, 0, 0)
+        enemy_group.remove(self)
 
         # probability for enemy to drop a gun
         if randint(1, 100) <= DROP_CHANCE:
@@ -492,6 +488,42 @@ def draw_timer(screen, timer):
     timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 50))
     screen.blit(timer_text, timer_rect)
 
+# display end screen
+def end_screen(elapsed_time):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if button_rect.collidepoint(event.pos):
+                    return True
+
+        # clear the screen
+        screen.fill(BLACK)
+
+        # display end screen message
+        pygame.mouse.set_visible(True)
+        font = pygame.font.SysFont(None, 40)
+        text_surface = font.render("Stage Completed", True, WHITE)
+        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
+        screen.blit(text_surface, text_rect)
+
+        # display time
+        time_text = "Your time: {:.2f} seconds".format(elapsed_time / 1000)
+        time_surface = font.render(time_text, True, WHITE)
+        time_rect = time_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        screen.blit(time_surface, time_rect)
+
+        # display button to return to menu
+        button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT + 100) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
+        pygame.draw.rect(screen, GREEN, button_rect)
+        button_text = font.render('Main Menu', True, WHITE)
+        button_text_rect = button_text.get_rect(center=button_rect.center)
+        screen.blit(button_text, button_text_rect)
+
+        pygame.display.update()
+
 # instantiate classes
 tile_map = TileMap("map1.txt")
 camera = Camera(tile_map)
@@ -575,10 +607,6 @@ while True:
             pygame.quit()
             exit()
 
-    # for when the player is dead
-    if not player.alive():
-        game_paused = True
-
     # for when the player is alive
     if player.alive():
         pygame.mouse.set_visible(False)
@@ -619,6 +647,15 @@ while True:
 
         pygame.display.update()
         clock.tick_busy_loop(FPS)
+
+        # check if player has reached exit and all enemies are killed
+        if tile_map.exit_tile_location and player.rect.collidepoint(tile_map.exit_tile_location) and len(enemy_group) == 0:
+            elapsed_time = pygame.time.get_ticks() - start_time
+            play_again = end_screen(elapsed_time)
+            if play_again:
+                new_game()
+            else:
+                main_menu()
 
     else:
         # game pause message
