@@ -95,6 +95,11 @@ class Player(pygame.sprite.Sprite):
             self.hitbox.center = self.pos
             self.rect.center = self.hitbox.center
 
+        # check if player has reached exit and all enemies are killed
+        if tile_map.exit_tile_location and self.rect.collidepoint(tile_map.exit_tile_location):
+            if len(enemy_group) == 0:
+                main_menu()
+
     # point player sprite in direction of mouse pointer
     def aim(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -410,6 +415,14 @@ class TileMap(pygame.sprite.Sprite):
                 elif map_symbol == "P":
                     tile_row.append(False)
                     self.player_spawn_location.append((x * TILE_SIZE, y * TILE_SIZE))
+
+                # spawn exit tile if symbol is X
+                elif map_symbol == "X":
+                    pygame.draw.rect(self.image, RED, tile_rect)
+                    tile_row.append(True)
+                    self.exit_tile_location = (x * TILE_SIZE, y * TILE_SIZE)
+                    break
+
                 else:
                     tile_row.append(False)
             self.tile_data.append(tile_row)
@@ -431,9 +444,11 @@ class TileMap(pygame.sprite.Sprite):
         self.rect.topleft = position
         surface.blit(self.image, self.rect)
 
+start_time = 0
+
 # restart game after death
 def new_game():
-    global player, enemy, game_paused
+    global player, enemy, game_paused, start_time
     game_paused = False
 
     # kill all relevant sprites
@@ -445,6 +460,8 @@ def new_game():
     enemy_group.empty()
     bullet_group.empty()
 
+    start_time = pygame.time.get_ticks()
+
     # respawn all relevant sprites at initial positions
     player = Player()
     all_sprites_group.add(player)
@@ -454,6 +471,24 @@ def new_game():
     enemy_spawn_locations = tile_map.get_enemy_spawn_locations()
     enemy = [Enemy(spawn_location) for spawn_location in enemy_spawn_locations]
     all_sprites_group.add(enemy)
+
+def draw_timer(screen, timer):
+    font = pygame.font.Font(None, 72)
+    # render text in black for outline
+    timer_surface = font.render("{:.2f}".format(timer / 1000), True, (BLACK))
+
+    # create list of offsets for outline
+    offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+
+    # blit with slight offsets
+    for offset in offsets:
+        timer_rect = timer_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], 50 + offset[1]))
+        screen.blit(timer_surface, timer_rect)
+
+    # blit main white text
+    timer_text = font.render("{:.2f}".format(timer / 1000), True, (WHITE))
+    timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 50))
+    screen.blit(timer_text, timer_rect)
 
 # instantiate classes
 tile_map = TileMap("map1.txt")
@@ -568,6 +603,12 @@ while True:
         # draw hitboxes for testing and debugging
         # player.draw_hitbox(screen, camera.offset)
 
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - start_time
+
+        # draw timer
+        draw_timer(screen, elapsed_time)
+
         # draw crosshair
         screen.blit(crosshair.image, crosshair.rect)
         crosshair_group.update()
@@ -603,6 +644,4 @@ while True:
             game_paused = False
         elif keys[pygame.K_ESCAPE]:
             # return to main menu
-            if not main_menu():
-                pygame.quit()
-                exit()
+            main_menu()
