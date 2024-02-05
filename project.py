@@ -470,7 +470,9 @@ def new_game():
 
     enemy_spawn_locations = tile_map.get_enemy_spawn_locations()
     enemy = [Enemy(spawn_location) for spawn_location in enemy_spawn_locations]
-    all_sprites_group.add(enemy)
+    for i in enemy:
+        enemy_group.add(enemy)
+        all_sprites_group.add(enemy)
 
 def draw_timer(screen, timer):
     font = pygame.font.Font(None, 72)
@@ -515,8 +517,9 @@ tile_map_group = pygame.sprite.GroupSingle()
 drops_group = pygame.sprite.Group()
 
 # add sprites to groups
-all_sprites_group.add(enemy)
-enemy_group.add(enemy)
+for i in enemy:
+    enemy_group.add(enemy)
+    all_sprites_group.add(enemy)
 all_sprites_group.add(player)
 crosshair_group.add(crosshair)
 tile_map_group.add(tile_map)
@@ -603,6 +606,7 @@ while True:
         # draw hitboxes for testing and debugging
         # player.draw_hitbox(screen, camera.offset)
 
+        # update timer
         current_time = pygame.time.get_ticks()
         elapsed_time = current_time - start_time
 
