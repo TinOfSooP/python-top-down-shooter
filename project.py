@@ -41,7 +41,7 @@ class Player(pygame.sprite.Sprite):
         self.hitbox_size = pygame.Vector2(80, 80)
         self.hitbox_offset = pygame.Vector2(-self.hitbox_size.x // 2, -self.hitbox_size.y // 2)
 
-        # Calculate hitbox rect
+        # calculate hitbox rect
         self.hitbox = pygame.Rect(self.pos.x + self.hitbox_offset.x, self.pos.y + self.hitbox_offset.y, self.hitbox_size.x, self.hitbox_size.y)
         self.rect = self.hitbox.copy()
         self.speed = PLAYER_SPEED
@@ -497,6 +497,7 @@ def end_screen(elapsed_time):
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
+                    record_time(elapsed_time)
                     return False
 
         # clear the screen
@@ -556,6 +557,19 @@ all_sprites_group.add(player)
 crosshair_group.add(crosshair)
 tile_map_group.add(tile_map)
 
+# record time to file
+def record_time(elapsed_time):
+    with open("times.txt", "a") as file:
+        file.write(str(elapsed_time) + "\n")
+
+# read top 5 times
+def read_top_times():
+    with open("times.txt", "r") as file:
+        lines = file.readlines()
+        top_times = [float(line.strip()) for line in lines]
+        top_times.sort()
+        return top_times[:5]
+
 # main menu screen
 def main_menu():
     while True:
@@ -571,10 +585,11 @@ def main_menu():
                     pygame.quit()
                     exit()
 
+        # configure window
         screen.fill(BLACK)
+        pygame.mouse.set_visible(True)
 
         # create start and quit buttons
-        pygame.mouse.set_visible(True)
         start_button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT - BUTTON_HEIGHT) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
         quit_button_rect = start_button_rect.copy()
         quit_button_rect.y += BUTTON_HEIGHT + BUTTON_SPACING
@@ -591,6 +606,24 @@ def main_menu():
         quit_text = font.render('Quit', True, (WHITE))
         quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
         screen.blit(quit_text, quit_text_rect)
+
+        # display top 5 times
+        top_times_rect = pygame.Rect(50, (SCREEN_HEIGHT - 400) // 2, 200, 400)
+        pygame.draw.rect(screen, BLACK, top_times_rect)
+        font = pygame.font.Font(None, 28)
+        label_text = font.render('Top 5 Times', True, WHITE)
+        label_text_rect = label_text.get_rect(center=(top_times_rect.centerx, top_times_rect.y + 30))
+        screen.blit(label_text, label_text_rect)
+
+        # Read top 5 times from file
+        top_times = read_top_times()
+        if top_times:
+            text_y = label_text_rect.bottom + 20
+            for idx, time in enumerate(top_times, start=1):
+                time_text = font.render(f'{idx}. {time / 1000:.2f} seconds', True, WHITE)
+                time_text_rect = time_text.get_rect(center=(top_times_rect.centerx, text_y))
+                screen.blit(time_text, time_text_rect)
+                text_y += 30
 
         pygame.display.update()
 
