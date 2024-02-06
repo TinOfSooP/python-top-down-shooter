@@ -108,7 +108,10 @@ class Player(pygame.sprite.Sprite):
         if self.shoot_cooldown == 0 and self.shoot and self.ammo > 0:
             self.shoot_cooldown = SHOOT_COOLDOWN
             self.create_bullet()
+
+            # change ammo counter
             self.ammo -= 1
+            self.ammo_counter()
 
     # instantiate a bullet
     def create_bullet(self):
@@ -129,6 +132,21 @@ class Player(pygame.sprite.Sprite):
         collisions = pygame.sprite.spritecollide(self, drops_group, True)
         for weapon in collisions:
             self.ammo = AMMO_COUNT
+
+    # display ammo counter with outline
+    def ammo_counter(self):
+        font = pygame.font.Font(None, 72)
+        counter_surface = font.render("Ammo: {}".format(self.ammo), True, (BLACK))
+
+        offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+
+        for offset in offsets:
+            counter_rect = counter_surface.get_rect(bottomleft=(10 + offset[0], (SCREEN_HEIGHT - 10) + offset[1]))
+            screen.blit(counter_surface, counter_rect)
+
+        counter_text = font.render("Ammo: {}".format(self.ammo), True, (WHITE))
+        counter_rect = counter_text.get_rect(bottomleft=(10, SCREEN_HEIGHT - 10))
+        screen.blit(counter_text, counter_rect)
 
     # draw player hitbox for debugging
     def draw_hitbox(self, surface, camera_offset):
@@ -470,20 +488,17 @@ def new_game():
         enemy_group.add(enemy)
         all_sprites_group.add(enemy)
 
+# draw timer with outline
 def draw_timer(screen, timer):
     font = pygame.font.Font(None, 72)
-    # render text in black for outline
-    timer_surface = font.render("{:.2f}".format(timer / 1000), True, (BLACK))
 
-    # create list of offsets for outline
+    timer_surface = font.render("{:.2f}".format(timer / 1000), True, (BLACK))
     offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
 
-    # blit with slight offsets
     for offset in offsets:
         timer_rect = timer_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], 50 + offset[1]))
         screen.blit(timer_surface, timer_rect)
 
-    # blit main white text
     timer_text = font.render("{:.2f}".format(timer / 1000), True, (WHITE))
     timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 50))
     screen.blit(timer_text, timer_rect)
@@ -579,6 +594,7 @@ def main_menu():
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if start_button_rect.collidepoint(event.pos):
+                    pygame.time.delay(100)
                     new_game()
                     return True
                 elif quit_button_rect.collidepoint(event.pos):
@@ -676,6 +692,8 @@ while True:
         # draw crosshair
         screen.blit(crosshair.image, crosshair.rect)
         crosshair_group.update()
+
+        player.ammo_counter()
 
         pygame.display.update()
         clock.tick_busy_loop(FPS)
