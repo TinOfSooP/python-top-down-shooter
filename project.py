@@ -525,7 +525,7 @@ def end_screen(elapsed_time):
         text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50))
         screen.blit(text_surface, text_rect)
 
-        # display time
+        # display time to 2 decimal places
         time_text = "Your time: {:.2f} seconds".format(elapsed_time / 1000)
         time_surface = font.render(time_text, True, WHITE)
         time_rect = time_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
@@ -631,7 +631,7 @@ def main_menu():
         label_text_rect = label_text.get_rect(center=(top_times_rect.centerx, top_times_rect.y + 30))
         screen.blit(label_text, label_text_rect)
 
-        # Read top 5 times from file
+        # read top 5 times from file
         top_times = read_top_times()
         if top_times:
             text_y = label_text_rect.bottom + 20
@@ -693,6 +693,7 @@ while True:
         screen.blit(crosshair.image, crosshair.rect)
         crosshair_group.update()
 
+        # refresh ammo counter value
         player.ammo_counter()
 
         pygame.display.update()
