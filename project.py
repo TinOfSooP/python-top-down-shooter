@@ -497,7 +497,7 @@ def end_screen(elapsed_time):
                 exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if button_rect.collidepoint(event.pos):
-                    return True
+                    return False
 
         # clear the screen
         screen.fill(BLACK)
@@ -599,7 +599,6 @@ if not main_menu():
     exit()
 
 # main game loop
-game_paused = False
 while True:
     keys = pygame.key.get_pressed()
     for event in pygame.event.get():
@@ -607,8 +606,8 @@ while True:
             pygame.quit()
             exit()
 
-    # for when the player is alive
-    if player.alive():
+    # handle player alive and game running
+    if player.alive() and not game_paused:
         pygame.mouse.set_visible(False)
 
         # clear screen
@@ -650,13 +649,15 @@ while True:
 
         # check if player has reached exit and all enemies are killed
         if tile_map.exit_tile_location and player.rect.collidepoint(tile_map.exit_tile_location) and len(enemy_group) == 0:
+            # calculate elapsed time
             elapsed_time = pygame.time.get_ticks() - start_time
-            play_again = end_screen(elapsed_time)
-            if play_again:
-                new_game()
-            else:
+
+            # display end screen
+            if not end_screen(elapsed_time):
+                # return to main menu
                 main_menu()
 
+    # handle player dead or game paused
     else:
         # game pause message
         font = pygame.font.SysFont(None, 40)
@@ -685,4 +686,6 @@ while True:
             game_paused = False
         elif keys[pygame.K_ESCAPE]:
             # return to main menu
-            main_menu()
+            if not main_menu():
+                pygame.quit()
+                exit()
