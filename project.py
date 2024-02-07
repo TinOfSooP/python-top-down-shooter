@@ -720,6 +720,8 @@ while True:
                     pygame.quit()
                     exit()
 
+    keys = pygame.key.get_pressed()
+
     # handle player alive and game running
     if player.alive() and not game_paused:
         pygame.mouse.set_visible(False)
