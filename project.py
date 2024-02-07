@@ -509,6 +509,40 @@ def outline_text(font_size, content, x, y):
     text_rect = text_surface.get_rect(center=(x, y))
     screen.blit(text_surface, text_rect)
 
+# controls screen
+def controls_screen(screen):
+    font = pygame.font.Font(None, 56)
+    controls_text = [
+        "Controls:",
+        "Move - SADW",
+        "Shoot - LMB",
+        "Restart - R",
+        "Exit to menu - Esc",
+
+        "",
+        "Aim:",
+        "Eliminate all enemies on the map then reach the exit",
+
+        "",
+        "Tips:",
+        "- Use your birds-eye view to scout out enemies",
+        "- Peek enemies quickly or get your head blown off",
+        "- Avoid long corridors or find out why...",
+        "- Running out of ammo is a bad idea",
+
+        "",
+        "Don't forget:",
+        "You die in 1 hit... but so do the enemies!",
+    ]
+    screen.fill(BLACK)
+    text_y = 50
+    for line in controls_text:
+        text_surface = font.render(line, True, WHITE)
+        screen.blit(text_surface, (50, text_y))
+        text_y += 50
+
+    pygame.display.update()
+
 # display end screen
 def end_screen(elapsed_time):
     while True:
@@ -593,6 +627,7 @@ def read_top_times():
 
 # main menu screen
 def main_menu():
+    show_controls = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -603,9 +638,16 @@ def main_menu():
                     pygame.time.delay(100)
                     new_game()
                     return True
+                elif controls_button_rect.collidepoint(event.pos):
+                    print("Controls button clicked")
+                    show_controls = True
+                    pygame.display.update()
                 elif quit_button_rect.collidepoint(event.pos):
                     pygame.quit()
                     exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    show_controls = False
 
         # configure window
         screen.fill(BLACK)
@@ -613,8 +655,10 @@ def main_menu():
 
         # create start and quit buttons
         start_button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT - BUTTON_HEIGHT) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
+        controls_button_rect = start_button_rect.copy()
+        controls_button_rect.y += BUTTON_HEIGHT + BUTTON_SPACING
         quit_button_rect = start_button_rect.copy()
-        quit_button_rect.y += BUTTON_HEIGHT + BUTTON_SPACING
+        quit_button_rect.y += 2 * BUTTON_HEIGHT + 2 * BUTTON_SPACING
 
         # draw start button
         pygame.draw.rect(screen, (GREEN), start_button_rect)
@@ -622,6 +666,12 @@ def main_menu():
         start_text = font.render('Start Game', True, (WHITE))
         start_text_rect = start_text.get_rect(center=start_button_rect.center)
         screen.blit(start_text, start_text_rect)
+
+        # draw controls button
+        pygame.draw.rect(screen, (GREEN), controls_button_rect)
+        controls_text = font.render('Controls', True, (WHITE))
+        controls_text_rect = controls_text.get_rect(center=controls_button_rect.center)
+        screen.blit(controls_text, controls_text_rect)
 
         # draw quit button
         pygame.draw.rect(screen, (GREEN), quit_button_rect)
@@ -647,6 +697,9 @@ def main_menu():
                 screen.blit(time_text, time_text_rect)
                 text_y += 30
 
+        if show_controls:
+            controls_screen(screen)
+
         pygame.display.update()
 
 if not main_menu():
@@ -655,11 +708,17 @@ if not main_menu():
 
 # main game loop
 while True:
-    keys = pygame.key.get_pressed()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if game_paused:
+                    game_paused = False
+                elif not main_menu():
+                    pygame.quit()
+                    exit()
 
     # handle player alive and game running
     if player.alive() and not game_paused:
