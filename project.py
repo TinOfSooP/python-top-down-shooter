@@ -16,14 +16,13 @@ clock = pygame.time.Clock()
 
 # load images outside of the class to avoid reloading unnecessarily
 try:
-    player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle2.png").convert_alpha(), 0, PLAYER_SIZE)
+    player_image = pygame.transform.rotozoom(pygame.image.load("player/survivorrifle.png").convert_alpha(), 0, PLAYER_SIZE)
     crosshair_image = pygame.transform.rotozoom(pygame.image.load("crosshair.png").convert_alpha(), 0, CROSSHAIR_SIZE)
+    kill_indicator_image = pygame.transform.rotozoom(pygame.image.load("kill_indicator.png").convert_alpha(), 0, KILL_INDICATOR_SIZE)
     bullet_image = pygame.image.load("bullets/boolettrail.png").convert_alpha()
     enemy_image = pygame.transform.rotozoom(pygame.image.load("enemy.png").convert_alpha(), 0, ENEMY_SIZE)
     enemy_dead_image = pygame.transform.rotozoom(pygame.image.load("enemy_dead.png").convert_alpha(), 0, ENEMY_DEAD_SIZE)
     drop_gun_image = pygame.transform.rotozoom(pygame.image.load("enemy_gun.png").convert_alpha(), 0, DROP_WEAPON_SIZE)
-    wall_image = pygame.transform.rotozoom(pygame.image.load("wall.png").convert_alpha(), 0, TILE_SIZE)
-    floor_image = pygame.transform.rotozoom(pygame.image.load("floor.png").convert_alpha(), 0, TILE_SIZE)
 except pygame.error as e:
     print("Error loading images", e)
     pygame.quit()
@@ -169,11 +168,23 @@ class Crosshair(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = crosshair_image.copy()
+        self.kill_indicator_image = kill_indicator_image.copy()
         self.rect = self.image.get_rect()
+        self.lifespan = 10
 
+    # show kill indicator when enemy is killed
+    def show_kill_indicator(self):
+        self.image = self.kill_indicator_image
+        self.kill_indicator_time = pygame.time.get_ticks()
+        
     # update crosshair
     def update(self):
         self.rect.center = pygame.mouse.get_pos()
+        if self.image == self.kill_indicator_image:
+            self.lifespan -= 1
+            if self.lifespan <= 0:
+                self.lifespan = 10
+                self.image = crosshair_image.copy()
 
 # bullet class
 class Bullet(pygame.sprite.Sprite):
@@ -334,6 +345,7 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(enemy_dead_image, -self.enemy_theta)
         self.hitbox = pygame.Rect(0, 0, 0, 0)
         enemy_group.remove(self)
+        crosshair.show_kill_indicator()
 
         # probability for enemy to drop a gun
         if randint(1, 100) <= DROP_CHANCE:
@@ -343,8 +355,8 @@ class Enemy(pygame.sprite.Sprite):
 
     # draw hitbox for debugging
     def draw_hitbox(self, surface, camera_offset):
-        adjusted_hitbox = self.hitbox.move(-camera_offset[0], -camera_offset[1])
-        pygame.draw.rect(surface, RED, adjusted_hitbox, 2)
+        drawn_hitbox = self.hitbox.move(-camera_offset[0], -camera_offset[1])
+        pygame.draw.rect(surface, RED, drawn_hitbox, 2)
 
     # update enemy
     def update(self):

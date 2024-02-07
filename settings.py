@@ -16,6 +16,7 @@ GUN_OFFSET_Y = 25
 # crosshair setup
 
 CROSSHAIR_SIZE = 0.25
+KILL_INDICATOR_SIZE = 0.25
 
 # weapon setup
 
