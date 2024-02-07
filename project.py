@@ -134,18 +134,7 @@ class Player(pygame.sprite.Sprite):
 
     # display ammo counter with outline
     def ammo_counter(self):
-        font = pygame.font.Font(None, 72)
-        counter_surface = font.render("Ammo: {}".format(self.ammo), True, (BLACK))
-
-        offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-
-        for offset in offsets:
-            counter_rect = counter_surface.get_rect(bottomleft=(10 + offset[0], (SCREEN_HEIGHT - 10) + offset[1]))
-            screen.blit(counter_surface, counter_rect)
-
-        counter_text = font.render("Ammo: {}".format(self.ammo), True, (WHITE))
-        counter_rect = counter_text.get_rect(bottomleft=(10, SCREEN_HEIGHT - 10))
-        screen.blit(counter_text, counter_rect)
+        outline_text(72, "Ammo: {}".format(self.ammo), 130, SCREEN_HEIGHT - 35)
 
     # draw player hitbox for debugging
     def draw_hitbox(self, surface, camera_offset):
@@ -501,19 +490,24 @@ def new_game():
         all_sprites_group.add(enemy)
 
 # draw timer with outline
-def draw_timer(screen, timer):
-    font = pygame.font.Font(None, 72)
+def draw_timer(timer):
+    outline_text(72, "{:.2f}".format(timer / 1000), SCREEN_WIDTH // 2, 50)
 
-    timer_surface = font.render("{:.2f}".format(timer / 1000), True, (BLACK))
+# outline text
+def outline_text(font_size, content, x, y):
+    font = pygame.font.SysFont(None, font_size)
+
+    text_surface = font.render(content, True, (BLACK))
+
     offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
 
     for offset in offsets:
-        timer_rect = timer_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], 50 + offset[1]))
-        screen.blit(timer_surface, timer_rect)
+        text_rect = text_surface.get_rect(center=(x + offset[0], y + offset[1]))
+        screen.blit(text_surface, text_rect)
 
-    timer_text = font.render("{:.2f}".format(timer / 1000), True, (WHITE))
-    timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 50))
-    screen.blit(timer_text, timer_rect)
+    text_surface = font.render(content, True, (WHITE))
+    text_rect = text_surface.get_rect(center=(x, y))
+    screen.blit(text_surface, text_rect)
 
 # display end screen
 def end_screen(elapsed_time):
@@ -699,7 +693,7 @@ while True:
         elapsed_time = current_time - start_time
 
         # draw timer
-        draw_timer(screen, elapsed_time)
+        draw_timer(elapsed_time)
 
         # draw crosshair
         screen.blit(crosshair.image, crosshair.rect)
@@ -723,24 +717,7 @@ while True:
 
     # handle player dead or game paused
     else:
-        # game pause message
-        font = pygame.font.SysFont(None, 40)
-
-        # render text in black for outline
-        text_surface = font.render("Press R to restart", True, (BLACK))
-
-        # create list of offsets for outline
-        offsets = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-
-        # blit with slight offsets
-        for offset in offsets:
-            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2 + offset[0], SCREEN_HEIGHT // 2 + offset[1]))
-            screen.blit(text_surface, text_rect)
-
-        # blit main white text
-        text_surface = font.render("Press R to restart", True, (WHITE))
-        text_rect = text_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        screen.blit(text_surface, text_rect)
+        outline_text(40, "Press R to restart", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
         pygame.display.update()
 
         # check for key presses
