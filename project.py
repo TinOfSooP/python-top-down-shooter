@@ -763,9 +763,6 @@ while True:
         # refresh ammo counter value
         player.ammo_counter()
 
-        pygame.display.update()
-        clock.tick_busy_loop(FPS)
-
         # check if player has reached exit and all enemies are killed
         if tile_map.exit_tile_location and player.rect.collidepoint(tile_map.exit_tile_location) and len(enemy_group) == 0:
             # calculate elapsed time
@@ -775,6 +772,9 @@ while True:
             if not end_screen(elapsed_time):
                 # return to main menu
                 main_menu()
+
+        pygame.display.update()
+        clock.tick_busy_loop(FPS)
 
     # handle player dead or game paused
     else:
