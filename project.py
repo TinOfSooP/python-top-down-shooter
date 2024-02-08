@@ -110,7 +110,6 @@ class Player(pygame.sprite.Sprite):
 
             # change ammo counter
             self.ammo -= 1
-            self.ammo_counter()
 
     # instantiate a bullet
     def create_bullet(self):
