@@ -683,14 +683,14 @@ def main_menu():
         top_times_rect = pygame.Rect(50, (SCREEN_HEIGHT - 400) // 2, 200, 400)
         pygame.draw.rect(screen, BLACK, top_times_rect)
         font = pygame.font.Font(None, 28)
-        label_text = font.render('Top 5 Times', True, WHITE)
-        label_text_rect = label_text.get_rect(center=(top_times_rect.centerx, top_times_rect.y + 30))
-        screen.blit(label_text, label_text_rect)
+        leaderboard_text = font.render('Top 5 Times', True, WHITE)
+        leaderboard_text_rect = leaderboard_text.get_rect(center=(top_times_rect.centerx, top_times_rect.y + 30))
+        screen.blit(leaderboard_text, leaderboard_text_rect)
 
         # read top 5 times from file
         top_times = read_top_times()
         if top_times:
-            text_y = label_text_rect.bottom + 20
+            text_y = leaderboard_text_rect.bottom + 20
             for idx, time in enumerate(top_times, start=1):
                 time_text = font.render(f'{idx}. {time / 1000:.2f} seconds', True, WHITE)
                 time_text_rect = time_text.get_rect(center=(top_times_rect.centerx, text_y))
