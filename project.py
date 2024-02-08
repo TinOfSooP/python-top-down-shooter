@@ -691,8 +691,8 @@ def main_menu():
         top_times = read_top_times()
         if top_times:
             text_y = leaderboard_text_rect.bottom + 20
-            for idx, time in enumerate(top_times, start=1):
-                time_text = font.render(f'{idx}. {time / 1000:.2f} seconds', True, WHITE)
+            for i, time in enumerate(top_times, start=1):
+                time_text = font.render(f'{i}. {time / 1000:.2f} seconds', True, WHITE)
                 time_text_rect = time_text.get_rect(center=(top_times_rect.centerx, text_y))
                 screen.blit(time_text, time_text_rect)
                 text_y += 30
