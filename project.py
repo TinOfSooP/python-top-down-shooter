@@ -768,9 +768,8 @@ while True:
             # calculate elapsed time
             elapsed_time = pygame.time.get_ticks() - start_time
 
-            # display end screen
+            # return to main menu
             if not end_screen(elapsed_time):
-                # return to main menu
                 main_menu()
 
         pygame.display.update()
