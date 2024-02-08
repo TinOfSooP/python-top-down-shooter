@@ -490,8 +490,8 @@ def new_game():
         all_sprites_group.add(enemy)
 
 # draw timer with outline
-def draw_timer(timer):
-    outline_text(72, "{:.2f}".format(timer / 1000), SCREEN_WIDTH // 2, 50)
+def draw_timer(elapsed_time):
+    outline_text(72, "{:.2f}".format(elapsed_time / 1000), SCREEN_WIDTH // 2, 50)
 
 # outline text
 def outline_text(font_size, content, x, y):
