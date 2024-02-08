@@ -146,6 +146,7 @@ class Player(pygame.sprite.Sprite):
         self.move()
         self.aim()
         self.ammo_pickup()
+        self.ammo_counter()
 
         # reduce time before next shot each tick
         if self.shoot_cooldown > 0:
@@ -758,9 +759,6 @@ while True:
         # draw crosshair
         screen.blit(crosshair.image, crosshair.rect)
         crosshair_group.update()
-
-        # refresh ammo counter value
-        player.ammo_counter()
 
         # check if player has reached exit and all enemies are killed
         if tile_map.exit_tile_location and player.rect.collidepoint(tile_map.exit_tile_location) and len(enemy_group) == 0:
