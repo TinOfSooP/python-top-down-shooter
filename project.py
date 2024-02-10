@@ -164,7 +164,6 @@ class Crosshair(pygame.sprite.Sprite):
     # show kill indicator when enemy is killed
     def show_kill_indicator(self):
         self.image = self.kill_indicator_image
-        self.kill_indicator_time = pygame.time.get_ticks()
         
     # update crosshair
     def update(self):
