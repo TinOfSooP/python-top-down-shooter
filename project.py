@@ -573,7 +573,7 @@ def end_screen(elapsed_time):
         # display button to return to menu
         button_rect = pygame.Rect((SCREEN_WIDTH - BUTTON_WIDTH) // 2, (SCREEN_HEIGHT + 100) // 2, BUTTON_WIDTH, BUTTON_HEIGHT)
         pygame.draw.rect(screen, GREEN, button_rect)
-        button_text = font.render('Main Menu', True, WHITE)
+        button_text = font.render("Main Menu", True, WHITE)
         button_text_rect = button_text.get_rect(center=button_rect.center)
         screen.blit(button_text, button_text_rect)
 
@@ -638,7 +638,6 @@ def main_menu():
                     new_game()
                     return True
                 elif controls_button_rect.collidepoint(event.pos):
-                    print("Controls button clicked")
                     show_controls = True
                     pygame.display.update()
                 elif quit_button_rect.collidepoint(event.pos):
@@ -662,19 +661,19 @@ def main_menu():
         # draw start button
         pygame.draw.rect(screen, (GREEN), start_button_rect)
         font = pygame.font.Font(None, 36)
-        start_text = font.render('Start Game', True, (WHITE))
+        start_text = font.render("Start Game", True, (WHITE))
         start_text_rect = start_text.get_rect(center=start_button_rect.center)
         screen.blit(start_text, start_text_rect)
 
         # draw controls button
         pygame.draw.rect(screen, (GREEN), controls_button_rect)
-        controls_text = font.render('Controls', True, (WHITE))
+        controls_text = font.render("Controls", True, (WHITE))
         controls_text_rect = controls_text.get_rect(center=controls_button_rect.center)
         screen.blit(controls_text, controls_text_rect)
 
         # draw quit button
         pygame.draw.rect(screen, (GREEN), quit_button_rect)
-        quit_text = font.render('Quit', True, (WHITE))
+        quit_text = font.render("Quit", True, (WHITE))
         quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
         screen.blit(quit_text, quit_text_rect)
 
@@ -682,7 +681,7 @@ def main_menu():
         top_times_rect = pygame.Rect(50, (SCREEN_HEIGHT - 400) // 2, 200, 400)
         pygame.draw.rect(screen, BLACK, top_times_rect)
         font = pygame.font.Font(None, 28)
-        leaderboard_text = font.render('Top 5 Times', True, WHITE)
+        leaderboard_text = font.render("Top 5 Times", True, WHITE)
         leaderboard_text_rect = leaderboard_text.get_rect(center=(top_times_rect.centerx, top_times_rect.y + 30))
         screen.blit(leaderboard_text, leaderboard_text_rect)
 
@@ -691,7 +690,7 @@ def main_menu():
         if top_times:
             text_y = leaderboard_text_rect.bottom + 20
             for i, time in enumerate(top_times, start=1):
-                time_text = font.render(f'{i}. {time / 1000:.2f} seconds', True, WHITE)
+                time_text = font.render(f"{i}. {time / 1000:.2f} seconds", True, WHITE)
                 time_text_rect = time_text.get_rect(center=(top_times_rect.centerx, text_y))
                 screen.blit(time_text, time_text_rect)
                 text_y += 30
